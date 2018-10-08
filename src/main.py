@@ -5,10 +5,12 @@ from mongoengine import *
 
 
 
-# class Article(Document):
-#     title = StringField(max_length=240, required=True)
-#     created_at =
 
+class Article(Document):
+    title = StringField(max_length=240, required=True)
+    created_at = DateTimeField()
+    thumbnail = StringField()
+    contents = ListField()
 
 def insertArticleDetail(url):
     print("insertArticleDetail")
