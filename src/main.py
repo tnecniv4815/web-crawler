@@ -2,6 +2,16 @@ import requests
 from bs4 import BeautifulSoup
 import datetime
 from mongoengine import *
+import urllib
+
+import os
+
+ROOT_PATH = os.path.abspath(__file__ + "/../../")
+IMG_DEST = os.path.join(ROOT_PATH + "/public/images/")
+
+# print (ROOT_PATH)
+# print (IMG_DEST)
+# print (os.path.abspath(__file__ + "/../../"))
 
 DB_NAME = "mydb"
 
@@ -53,24 +63,38 @@ def insertArticle(url):
             thumbnail = thumbnail[0]["src"]
 
 
-        created_date_time = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M")
+        created_date_time_obj = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M")
 
+        """
         ################
         ### insert to db
         ################
+        """
 
         print(title)
         print(time)
         print(thumbnail)
         print(link)
 
+        # thumbnail_image_dest_path = "/Users/vincent/repository/github/web-crawler/public/images/abc.jpg"
+
+        # print (IMG_DEST)
+        # print (created_date_time_obj.date())
+
+        filename = created_date_time_obj.strftime("%Y-%m-%d_%H:%M")
+
+        thumbnail_image_dest_path = IMG_DEST  + filename + ".jpg"
+        # print (thumbnail_image_dest_path)
+
+        urllib.request.urlretrieve(thumbnail, thumbnail_image_dest_path)
+
 
         # print(created_date_time)
 
-        oldArticles = Article.objects(created_at=created_date_time)
+        oldArticles = Article.objects(created_at=created_date_time_obj)
         if len(oldArticles) == 0:
             # new
-            newArticle = Article(title=title, thumbnail=thumbnail, created_at=created_date_time, contents=[])
+            newArticle = Article(title=title, thumbnail=thumbnail_image_dest_path, created_at=created_date_time_obj, contents=[])
             newArticle.save()
 
         # print(oldArticles)
