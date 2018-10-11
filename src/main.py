@@ -5,8 +5,9 @@ import time
 from mongoengine import *
 import urllib
 from pathlib import Path
-
 import os
+from enum import Enum
+import re
 
 DEFAULT_IMG_EXT = "jpg"
 ROOT_PATH = os.path.abspath(__file__ + "/../../")
@@ -18,12 +19,39 @@ IMG_DEST = os.path.join(ROOT_PATH + "/public/images/")
 
 DB_NAME = "mydb"
 
+class ArticleContent(Document):
+    article_id = ObjectIdField()
+    content = StringField()
+    type = DecimalField()
+    subtitle = StringField()
+    media_url = StringField()
+    created_at = DateTimeField(required=True)
 
+
+
+class ContentType(Enum):
+    PARAGRAPH = "1"
+    IMAGE = "2"
+
+"""
+
+class ArticleContent:
+    content = ""
+    type
+    caption = ""
+
+    def __init__(self, content, type, caption):
+        self.content = content
+        self.type = type
+        self.caption = caption
+"""
 
 class Article(Document):
+    article_id = DecimalField()
     title = StringField(max_length=240, required=True)
     thumbnail = StringField()
-    contents = ListField()
+    contents = ListField(StringField(max_length=300))
+    posted_at = DateTimeField(required=True)
     created_at = DateTimeField(required=True)
 
 def generate_timestamp():
@@ -47,15 +75,17 @@ def saveImage(src_url, dest_url_with_filename):
     if not img_file.is_file():
         urllib.request.urlretrieve(src_url, dest_url_with_filename)
 
-def scrapeArticleDetail(url):
+def scrapeArticleDetail(article_id, url):
     list = []
+
+    endpoint = "http://std.stheadline.com/instant/articles/detail/"
 
     links = url.split("/")
     if len(links) > 0:
-        endpoint = links[len(links)-1]
+        url_end = links[len(links)-1]
 
         # url = "http://std.stheadline.com/instant/articles/detail/" + "835807-%E9%A6%99%E6%B8%AF-%E6%B7%B1%E6%B0%B4%E5%9F%97%E5%8A%8F%E6%88%BF%E8%80%81%E7%BF%81%E6%B6%89%E6%AE%BA%E6%88%BF%E5%AE%A2%E5%BE%8C%E7%B8%B1%E7%81%AB%E7%87%92%E5%B1%8B%E5%86%8D%E5%A2%AE%E6%96%83+%E5%88%97%E8%AC%80%E6%AE%BA%E5%8F%8A%E8%87%AA%E6%AE%BA%E9%87%8D%E6%A1%88%E7%B5%84%E8%B7%9F%E9%80%B2"
-        url = "http://std.stheadline.com/instant/articles/detail/" + endpoint
+        url = endpoint + url_end
         print("scrapeArticleDetail_url: " + url)
 
 
@@ -73,7 +103,12 @@ def scrapeArticleDetail(url):
 
             figures = item.find_all("figure")
 
+            """
+            image
+            """
             for figure in figures:
+                # full_img_path = ""
+
                 fig_images = figure.find_all("img")
 
                 if len(fig_images) > 0:
@@ -82,21 +117,56 @@ def scrapeArticleDetail(url):
 
                     ext = get_file_extension(fig_image_url)
                     filename = generate_timestamp()
-                    FULL_IMG_PATH = IMG_DEST + filename + "." + ext
+                    full_img_path = IMG_DEST + filename + "." + ext
 
-                    saveImage(fig_image_url, FULL_IMG_PATH)
-
-                    # append
-                    list.append(FULL_IMG_PATH)
-
-                    print (fig_image_url)
+                    saveImage(fig_image_url, full_img_path)
 
 
-                fig_caption = figure.find_all("figcaption", {"class": "caption-text"})[0]
 
-                print (fig_caption.text)
+                    # print (fig_image_url)
 
 
+                fig_caption = "" + figure.find_all("figcaption", {"class": "caption-text"})[0].text
+
+                # append
+                # list_obj = ArticleContent(full_img_path, ContentType.IMAGE, fig_caption)
+                # list.append(list_obj)
+
+                # newArticle = Article(title=title, thumbnail=thumbnail_image_dest_path, posted_at=posted_date_time_obj, created_at=datetime.datetime.now(), contents=[])
+
+                content_type = 2
+
+
+                new_article_content = ArticleContent(article_id=article_id, type=content_type, subtitle=fig_caption, media_url=full_img_path, created_at=datetime.datetime.now())
+                new_article_content.save()
+
+                # print (fig_caption.text)
+
+            """
+            paragrpah
+            """
+            ps = item.find_all("p")
+
+            for p in ps:
+
+                for br in p.find_all("br"):
+                    br.replace_with("\n")
+
+                # s = re.sub("<br\s*?>", "\n", p)
+                print ("pppp")
+                print (p)
+                print ("pppp~~~~~")
+                # print (s)
+                print ("pppp_____")
+                print (p.text)
+
+                # append
+                list_obj = ArticleContent(p.text, ContentType.PARAGRAPH, "")
+                list.append(list_obj)
+
+
+        print ("list")
+        print (list)
         print ("\n\n")
 
 
@@ -104,14 +174,36 @@ def scrapeArticleDetail(url):
 
 
 
-def insertArticleDetail(url, created_date_time_obj):
+def insertArticleDetail(url, posted_date_time_obj):
     print("insertArticleDetail")
 
-    articles = Article.objects(created_at=created_date_time_obj)
+    articles = Article.objects(posted_at=posted_date_time_obj)
     if len(articles) > 0:
         article = articles[0]
 
-        list = scrapeArticleDetail(url)
+        list = scrapeArticleDetail(article.id, url)
+
+        # list = []
+
+        # list.append(ArticleContent("123", ContentType.PARAGRAPH, "asdf"))
+
+        # list.append("aaa")
+        # list.append("bbb")
+        # list.append("ccc")
+
+        # Article.update(posted_at=posted_date_time_obj, contents=list)
+
+        # article
+
+        # print (article.id)
+
+        # article.title = "haha"
+        # article.contents = list #["asdf", "123123", "sdfasdag"]
+        # article.save()
+
+        # if len(list) > 0:
+            # article.contents = list
+            # article.update()
 
 
 
@@ -149,7 +241,7 @@ def scrapeArticle(url):
             thumbnail = thumbnail[0]["src"]
 
 
-        created_date_time_obj = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M")
+        posted_date_time_obj = datetime.datetime.strptime(time, "%Y-%m-%d %H:%M")
 
         """
         ################
@@ -166,14 +258,14 @@ def scrapeArticle(url):
         # thumbnail_image_dest_path = "/Users/vincent/repository/github/web-crawler/public/images/abc.jpg"
 
         # print (IMG_DEST)
-        # print (created_date_time_obj.date())
+        # print (posted_date_time_obj.date())
 
 
         ext = get_file_extension(thumbnail)
 
 
 
-        filename = created_date_time_obj.strftime("%Y-%m-%d_%H:%M")
+        filename = posted_date_time_obj.strftime("%Y-%m-%d_%H:%M")
 
         thumbnail_image_dest_path = IMG_DEST + filename + "." + ext
         # print (thumbnail_image_dest_path)
@@ -185,15 +277,16 @@ def scrapeArticle(url):
 
         # print(created_date_time)
 
-        oldArticles = Article.objects(created_at=created_date_time_obj)
+        oldArticles = Article.objects(posted_at=posted_date_time_obj)
         if len(oldArticles) == 0:
             # new
-            newArticle = Article(title=title, thumbnail=thumbnail_image_dest_path, created_at=created_date_time_obj, contents=[])
+            # article_id=posted_date_time_obj,
+            newArticle = Article(title=title, thumbnail=thumbnail_image_dest_path, posted_at=posted_date_time_obj, created_at=datetime.datetime.now(), contents=[])
             newArticle.save()
 
 
         if link != "":
-            insertArticleDetail(link, created_date_time_obj)
+            insertArticleDetail(link, posted_date_time_obj)
 
 
 
