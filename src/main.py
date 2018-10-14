@@ -50,7 +50,7 @@ class Article(Document):
     article_id = DecimalField()
     title = StringField(max_length=240, required=True)
     thumbnail = StringField()
-    contents = ListField(StringField(max_length=300))
+    # contents = ListField(ObjectIdField())
     posted_at = DateTimeField(required=True)
     created_at = DateTimeField(required=True)
 
@@ -134,6 +134,7 @@ def scrapeArticleDetail(article_id, url):
 
                 # newArticle = Article(title=title, thumbnail=thumbnail_image_dest_path, posted_at=posted_date_time_obj, created_at=datetime.datetime.now(), contents=[])
 
+                # 2 = Image
                 content_type = 2
 
 
@@ -152,17 +153,23 @@ def scrapeArticleDetail(article_id, url):
                 for br in p.find_all("br"):
                     br.replace_with("\n")
 
-                # s = re.sub("<br\s*?>", "\n", p)
-                print ("pppp")
-                print (p)
-                print ("pppp~~~~~")
-                # print (s)
-                print ("pppp_____")
-                print (p.text)
+
+                # print ("pppp")
+                # print (p)
+                # print ("pppp~~~~~")
+                # # print (s)
+                # print ("pppp_____")
+                # print (p.text)
 
                 # append
-                list_obj = ArticleContent(p.text, ContentType.PARAGRAPH, "")
-                list.append(list_obj)
+                # list_obj = ArticleContent(p.text, ContentType.PARAGRAPH, "")
+                # list.append(list_obj)
+
+                # 1 = paragraph
+                content_type = 1
+
+                new_article_content = ArticleContent(article_id=article_id, type=content_type, created_at=datetime.datetime.now(), content=p.text)
+                new_article_content.save()
 
 
         print ("list")
