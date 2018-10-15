@@ -288,7 +288,7 @@ def scrapeArticle(url):
         if len(oldArticles) == 0:
             # new
             # article_id=posted_date_time_obj,
-            newArticle = Article(title=title, thumbnail=thumbnail_image_dest_path, posted_at=posted_date_time_obj, created_at=datetime.datetime.now(), contents=[])
+            newArticle = Article(title=title, thumbnail=thumbnail_image_dest_path, posted_at=posted_date_time_obj, created_at=datetime.datetime.now())
             newArticle.save()
 
 
