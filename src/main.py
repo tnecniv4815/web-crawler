@@ -19,6 +19,7 @@ IMG_DEST = os.path.join(ROOT_PATH + "/public/images/")
 
 DB_NAME = "mydb"
 
+
 class ArticleContent(Document):
     article_id = ObjectIdField()
     content = StringField()
@@ -26,7 +27,6 @@ class ArticleContent(Document):
     subtitle = StringField()
     media_url = StringField()
     created_at = DateTimeField(required=True)
-
 
 
 class ContentType(Enum):
@@ -50,7 +50,7 @@ class Article(Document):
     article_id = DecimalField()
     title = StringField(max_length=240, required=True)
     thumbnail = StringField()
-    # contents = ListField(ObjectIdField())
+    contents = ListField(ObjectIdField())
     posted_at = DateTimeField(required=True)
     created_at = DateTimeField(required=True)
 
@@ -61,11 +61,17 @@ def generate_timestamp():
     return st
 
 def get_file_extension(tmp_url):
-    extension = ""
+    # tmp_url = "" + tmp_url
+    print ("get_file_extension: ", tmp_url)
 
-    tmp_ext_array = tmp_url.split(".")
-    if len(tmp_ext_array) > 0:
-        extension = tmp_ext_array[len(tmp_ext_array) - 1]
+    extension = DEFAULT_IMG_EXT
+
+    if type(tmp_url) == str:
+        tmp_ext_array = tmp_url.split(".")
+        if len(tmp_ext_array) > 0:
+            extension = tmp_ext_array[len(tmp_ext_array) - 1]
+        else:
+            extension = DEFAULT_IMG_EXT
     else:
         extension = DEFAULT_IMG_EXT
     return extension
@@ -75,7 +81,7 @@ def saveImage(src_url, dest_url_with_filename):
     if not img_file.is_file():
         urllib.request.urlretrieve(src_url, dest_url_with_filename)
 
-def scrapeArticleDetail(article_id, url):
+def scrapeArticleDetail(article, url, posted_date_time_obj):
     list = []
 
     endpoint = "http://std.stheadline.com/instant/articles/detail/"
@@ -138,8 +144,14 @@ def scrapeArticleDetail(article_id, url):
                 content_type = 2
 
 
-                new_article_content = ArticleContent(article_id=article_id, type=content_type, subtitle=fig_caption, media_url=full_img_path, created_at=datetime.datetime.now())
+                new_article_content = ArticleContent(article_id=article.id, type=content_type, subtitle=fig_caption, media_url=full_img_path, created_at=datetime.datetime.now())
                 new_article_content.save()
+
+
+
+                # print ("contentId: " + new_article_content.id)
+                # print ("articleId: " + article.id)
+                # print ("article_contents: " + article.contents)
 
                 # print (fig_caption.text)
 
@@ -168,8 +180,23 @@ def scrapeArticleDetail(article_id, url):
                 # 1 = paragraph
                 content_type = 1
 
-                new_article_content = ArticleContent(article_id=article_id, type=content_type, created_at=datetime.datetime.now(), content=p.text)
+                new_article_content = ArticleContent(article_id=article.id, type=content_type, created_at=datetime.datetime.now(), content=p.text)
                 new_article_content.save()
+
+        """
+        get article object
+        query article content object (get ObjectId)
+        update contents[ObjectId, ObjectId]
+        """
+
+        print ("tmp_article_contents")
+
+        tmp_article_contents = ArticleContent.objects(article_id=article.id)
+        for content_obj in tmp_article_contents:
+            print ("type: {}  , subtitle: {}".format(content_obj.type, content_obj.subtitle))
+            article.contents.append(content_obj.id)
+
+        article.save()
 
 
         print ("list")
@@ -188,7 +215,7 @@ def insertArticleDetail(url, posted_date_time_obj):
     if len(articles) > 0:
         article = articles[0]
 
-        list = scrapeArticleDetail(article.id, url)
+        list = scrapeArticleDetail(article, url, posted_date_time_obj)
 
         # list = []
 

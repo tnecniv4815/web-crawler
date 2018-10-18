@@ -1,3 +1,4 @@
+print ("hello")
 
 def greeting():
     print("greeting")

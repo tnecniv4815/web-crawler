@@ -1,4 +1,9 @@
 .idea/*
 public/images/*
 
+web-crawler/bin/*
+web-crawler/include/*
+web-crawler/lib/*
+#.Python
+
 #Pipfile.lock
