@@ -60,6 +60,22 @@ def generate_timestamp():
 
     return st
 
+def get_filename_with_extension(tmp_url):
+    print ("get_filename_with_extension: ", tmp_url)
+
+    tmp_fileanme = ""
+
+    if type(tmp_url) == str:
+        tmp_array = tmp_url.split("/")
+        if len(tmp_array) > 0:
+            tmp_fileanme = tmp_array[len(tmp_array) - 1]
+        else:
+            tmp_fileanme = generate_timestamp()
+    else:
+        tmp_fileanme = generate_timestamp()
+
+    return tmp_fileanme
+
 def get_file_extension(tmp_url):
     # tmp_url = "" + tmp_url
     print ("get_file_extension: ", tmp_url)
@@ -121,9 +137,12 @@ def scrapeArticleDetail(article, url, posted_date_time_obj):
                     fig_image_url = fig_images[0]["src"]
 
 
-                    ext = get_file_extension(fig_image_url)
-                    filename = generate_timestamp()
-                    full_img_path = IMG_DEST + filename + "." + ext
+                    # ext = get_file_extension(fig_image_url)
+                    # filename = generate_timestamp()
+                    # full_img_path = IMG_DEST + filename + "." + ext
+
+                    filename_with_ext = get_filename_with_extension(fig_image_url)
+                    full_img_path = IMG_DEST + filename_with_ext
 
                     saveImage(fig_image_url, full_img_path)
 
@@ -144,10 +163,19 @@ def scrapeArticleDetail(article, url, posted_date_time_obj):
                 content_type = 2
 
 
-                new_article_content = ArticleContent(article_id=article.id, type=content_type, subtitle=fig_caption, media_url=full_img_path, created_at=datetime.datetime.now())
-                new_article_content.save()
 
+                tmp_old_article_content = ArticleContent.objects(article_id=article.id, media_url=full_img_path, type=content_type).first()
+                if tmp_old_article_content is None:
+                    # print ("laksdfjlkasdjflkasjdflkjasdklf")
+                    # print (tmp_old_article_content)
 
+                    new_article_content = ArticleContent(article_id=article.id, type=content_type, subtitle=fig_caption, media_url=full_img_path, created_at=datetime.datetime.now())
+                    new_article_content.save()
+
+                    new_insert_article_content = ArticleContent.objects(article_id=article.id, media_url=full_img_path, type=content_type).first()
+                    if new_insert_article_content is not None:
+                        article.contents.append(new_insert_article_content.id)
+                        article.save()
 
                 # print ("contentId: " + new_article_content.id)
                 # print ("articleId: " + article.id)
@@ -180,8 +208,22 @@ def scrapeArticleDetail(article, url, posted_date_time_obj):
                 # 1 = paragraph
                 content_type = 1
 
-                new_article_content = ArticleContent(article_id=article.id, type=content_type, created_at=datetime.datetime.now(), content=p.text)
-                new_article_content.save()
+                tmp_old_article_content = ArticleContent.objects(article_id=article.id, content=p.text, type=content_type).first()
+                if tmp_old_article_content is None:
+                    print ("tmp_old_article_content paragraph")
+                    print (tmp_old_article_content)
+
+                    new_article_content = ArticleContent(article_id=article.id, type=content_type, created_at=datetime.datetime.now(), content=p.text)
+                    new_article_content.save()
+
+                    new_insert_article_content = ArticleContent.objects(article_id=article.id, content=p.text, type=content_type).first()
+                    print ("new_insert_article_content")
+                    print (new_insert_article_content)
+                    if new_insert_article_content is not None:
+                        article.contents.append(new_insert_article_content.id)
+                        article.save()
+
+
 
         """
         get article object
@@ -189,6 +231,7 @@ def scrapeArticleDetail(article, url, posted_date_time_obj):
         update contents[ObjectId, ObjectId]
         """
 
+        """
         print ("tmp_article_contents")
 
         tmp_article_contents = ArticleContent.objects(article_id=article.id)
@@ -197,6 +240,8 @@ def scrapeArticleDetail(article, url, posted_date_time_obj):
             article.contents.append(content_obj.id)
 
         article.save()
+        
+        """
 
 
         print ("list")
@@ -302,7 +347,7 @@ def scrapeArticle(url):
         filename = posted_date_time_obj.strftime("%Y-%m-%d_%H:%M")
 
         thumbnail_image_dest_path = IMG_DEST + filename + "." + ext
-        # print (thumbnail_image_dest_path)
+        print (thumbnail_image_dest_path)
 
         # urllib.request.urlretrieve(thumbnail, thumbnail_image_dest_path)
 
