@@ -11,7 +11,11 @@ import re
 
 DEFAULT_IMG_EXT = "jpg"
 ROOT_PATH = os.path.abspath(__file__ + "/../../")
-IMG_DEST = os.path.join(ROOT_PATH + "/public/images/")
+
+# IMG_DEST = os.path.join(ROOT_PATH + "/public/images/")
+IMG_DEST = os.path.join("/Users/vincent/repository/github/backend-node-server" + "/public/images/")
+
+IMG_SAVE_DEST = "/public/images/"
 
 # print (ROOT_PATH)
 # print (IMG_DEST)
@@ -93,6 +97,8 @@ def get_file_extension(tmp_url):
     return extension
 
 def saveImage(src_url, dest_url_with_filename):
+    print ("src_url: {} \ndest_url_with_filename: {}".format(src_url, dest_url_with_filename))
+
     img_file = Path(dest_url_with_filename)
     if not img_file.is_file():
         urllib.request.urlretrieve(src_url, dest_url_with_filename)
@@ -142,6 +148,7 @@ def scrapeArticleDetail(article, url, posted_date_time_obj):
                     # full_img_path = IMG_DEST + filename + "." + ext
 
                     filename_with_ext = get_filename_with_extension(fig_image_url)
+                    image_path = IMG_SAVE_DEST + filename_with_ext
                     full_img_path = IMG_DEST + filename_with_ext
 
                     saveImage(fig_image_url, full_img_path)
@@ -164,15 +171,15 @@ def scrapeArticleDetail(article, url, posted_date_time_obj):
 
 
 
-                tmp_old_article_content = ArticleContent.objects(article_id=article.id, media_url=full_img_path, type=content_type).first()
+                tmp_old_article_content = ArticleContent.objects(article_id=article.id, media_url=image_path, type=content_type).first()
                 if tmp_old_article_content is None:
                     # print ("laksdfjlkasdjflkasjdflkjasdklf")
                     # print (tmp_old_article_content)
 
-                    new_article_content = ArticleContent(article_id=article.id, type=content_type, subtitle=fig_caption, media_url=full_img_path, created_at=datetime.datetime.now())
+                    new_article_content = ArticleContent(article_id=article.id, type=content_type, subtitle=fig_caption, media_url=image_path, created_at=datetime.datetime.now())
                     new_article_content.save()
 
-                    new_insert_article_content = ArticleContent.objects(article_id=article.id, media_url=full_img_path, type=content_type).first()
+                    new_insert_article_content = ArticleContent.objects(article_id=article.id, media_url=image_path, type=content_type).first()
                     if new_insert_article_content is not None:
                         article.contents.append(new_insert_article_content.id)
                         article.save()
@@ -346,12 +353,17 @@ def scrapeArticle(url):
 
         filename = posted_date_time_obj.strftime("%Y-%m-%d_%H:%M")
 
+        thumbnail_image_path = IMG_SAVE_DEST + filename + "." + ext
         thumbnail_image_dest_path = IMG_DEST + filename + "." + ext
+
+        print (thumbnail)
+        print (thumbnail_image_path)
         print (thumbnail_image_dest_path)
 
         # urllib.request.urlretrieve(thumbnail, thumbnail_image_dest_path)
 
         saveImage(thumbnail, thumbnail_image_dest_path)
+
 
 
         # print(created_date_time)
@@ -360,7 +372,7 @@ def scrapeArticle(url):
         if len(oldArticles) == 0:
             # new
             # article_id=posted_date_time_obj,
-            newArticle = Article(title=title, thumbnail=thumbnail_image_dest_path, posted_at=posted_date_time_obj, created_at=datetime.datetime.now())
+            newArticle = Article(title=title, thumbnail=thumbnail_image_path, posted_at=posted_date_time_obj, created_at=datetime.datetime.now())
             newArticle.save()
 
 
