@@ -198,7 +198,8 @@ def scrapeArticleDetail(article, url, posted_date_time_obj):
             for p in ps:
 
                 for br in p.find_all("br"):
-                    br.replace_with("\n")
+                    br.replace_with("<br />")
+                    # br.replace_with("\n")
 
 
                 # print ("pppp")
